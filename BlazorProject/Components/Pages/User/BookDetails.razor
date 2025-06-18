@@ -1,0 +1,69 @@
+﻿@page "/book/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.Data.SqlClient
+@inject NavigationManager Nav
+
+<h3>Book Details</h3>
+
+@if (book == null)
+{
+        <p>Loading...</p>
+}
+else
+{
+        <div class="card">
+            <img src="@book.CoverImageUrl" class="card-img-top" alt="@book.Title" style="height: 400px; object-fit: cover;">
+            <div class="card-body">
+                <h3>@book.Title</h3>
+                <h5 class="text-muted">by @book.Author</h5>
+                <p>@book.Description</p>
+                <p><strong>Price:</strong> $@book.Price</p>
+                <p><strong>In Stock:</strong> @book.Stock</p>
+            </div>
+        </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    Book? book;
+
+    string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM Books WHERE Id = @id";
+        command.Parameters.AddWithValue("@id", Id);
+
+        using var reader = await command.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            book = new Book
+                {
+                    Id = reader.GetInt32(0),
+                    Title = reader.GetString(1),
+                    Author = reader.GetString(2),
+                    Price = decimal.TryParse(reader.GetValue(3)?.ToString(), out var price) ? price : 0m,
+                    Stock = reader.GetInt32(4),
+                    CoverImageUrl = reader.GetString(5),
+                    Description = reader.GetString(6)
+                };
+        }
+
+    }
+
+    public class Book
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int Stock { get; set; }
+        public string CoverImageUrl { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}

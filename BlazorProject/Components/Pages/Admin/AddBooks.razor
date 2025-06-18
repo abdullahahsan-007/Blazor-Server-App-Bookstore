@@ -1,0 +1,127 @@
+﻿@page "/admin/add-book"
+@rendermode InteractiveServer
+@inject IConfiguration Configuration
+@layout Components.Layout.AdminLayout
+
+<style>
+    textarea.form-control {
+        resize: vertical;
+    }
+</style>
+
+<div class="card shadow p-4 rounded-4" style="max-width: 600px; margin: auto;">
+    <h3 class="mb-4 text-center">Add New Book</h3>
+
+    <div class="mb-3">
+        <label class="form-label">Title:</label>
+        <input type="text" @bind="title" class="form-control rounded-3" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Author:</label>
+        <input type="text" @bind="author" class="form-control rounded-3" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Genre:</label>
+        <input type="text" @bind="genre" class="form-control rounded-3" placeholder="e.g. Fiction, Science, History" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Price:</label>
+        <input type="number" step="0.01" @bind="price" class="form-control rounded-3" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Stock:</label>
+        <input type="number" @bind="stock" class="form-control rounded-3" min="0" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cover Image URL:</label>
+        <input type="text" @bind="imageUrl" class="form-control rounded-3" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description:</label>
+        <textarea @bind="description" rows="4" class="form-control rounded-3"></textarea>
+    </div>
+
+    <div class="d-grid">
+        <button class="btn btn-primary rounded-3" @onclick="SubmitBook">Add Book</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+            <p class="mt-3 text-success">@message</p>
+    }
+</div>
+
+@code {
+    private string title = "";
+    private string author = "";
+    private string genre = "";
+    private decimal price;
+    private int stock;
+    private string imageUrl = "";
+    private string description = "";
+    private string message = "";
+
+    private string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    private async Task SubmitBook()
+    {
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(author) || price <= 0 || stock < 0)
+        {
+            message = "Please fill all required fields correctly.";
+            return;
+        }
+
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        // Step 1: Ensure table exists with correct schema
+        var createTableCommand = connection.CreateCommand();
+        createTableCommand.CommandText = @"
+            IF NOT EXISTS (
+                SELECT * FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_NAME = 'Books'
+            )
+            BEGIN
+                CREATE TABLE Books (
+                    Id INT IDENTITY(1,1) PRIMARY KEY,
+                    Title NVARCHAR(255) NOT NULL,
+                    Author NVARCHAR(255) NOT NULL,
+                    Genre NVARCHAR(100),
+                    Price DECIMAL(10, 2) NOT NULL,
+                    Stock INT NOT NULL DEFAULT 0,
+                    CoverImageUrl NVARCHAR(MAX),
+                    Description NVARCHAR(MAX)
+                )
+            END";
+        await createTableCommand.ExecuteNonQueryAsync();
+
+       
+        var insertCommand = connection.CreateCommand();
+        insertCommand.CommandText = @"
+            INSERT INTO Books (Title, Author, Genre, Price, Stock, CoverImageUrl, Description)
+            VALUES (@Title, @Author, @Genre, @Price, @Stock, @CoverImageUrl, @Description)";
+
+        insertCommand.Parameters.AddWithValue("@Title", title);
+        insertCommand.Parameters.AddWithValue("@Author", author);
+        insertCommand.Parameters.AddWithValue("@Genre", genre ?? (object)DBNull.Value);
+        insertCommand.Parameters.AddWithValue("@Price", price);
+        insertCommand.Parameters.AddWithValue("@Stock", stock);
+        insertCommand.Parameters.AddWithValue("@CoverImageUrl", imageUrl ?? (object)DBNull.Value);
+        insertCommand.Parameters.AddWithValue("@Description", description ?? (object)DBNull.Value);
+
+        await insertCommand.ExecuteNonQueryAsync();
+
+        message = "✅ Book added successfully.";
+
+        // Clear form
+        title = author = genre = imageUrl = description = "";
+        price = 0;
+        stock = 0;
+    }
+}

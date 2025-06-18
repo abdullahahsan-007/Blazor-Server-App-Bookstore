@@ -1,0 +1,352 @@
+﻿@page "/"
+@inject BookStateService StateService
+@using YourNamespace.Models
+ @rendermode InteractiveServer 
+
+<style>
+  .page-wrapper {
+    background-color: #f9f5fb;
+    background: linear-gradient(to bottom, #fdfcff, #f9f5fb);
+    padding: 20px 50px;
+    min-height: 100vh;
+    width: 100%;
+}
+
+
+
+    media (max-width: 768px) {
+    .page-wrapper {
+        padding: 20px;
+    }
+}
+
+
+.book-card {
+    width: 230px;
+    height: 390px;
+    border-radius: 15px;
+    overflow: hidden;
+    background-color: #f3e5f5; 
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s;
+    padding: 10px;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(123, 31, 162, 0.25);
+}
+
+.text-purple {
+    color: #7b1fa2;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-header {
+    padding: 30px 15px;
+    color: #fff;
+    position: relative;
+    height: 200px;
+    width: 90%;
+    display:flex;
+    align-items: center;
+    justify-content:center;
+}
+
+.book-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+}
+
+.rating-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: orange;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 20px;
+    padding: 4px 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.genre-text {
+    color: #7b1fa2;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.book-price .price-now {
+    color: #6a1b9a;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+.book-modal {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.book-image-section {
+    position: relative;
+    background-color: #f3f3f3;
+    min-width: 240px;
+    max-width: 280px;
+    padding: 20px;
+    border-right: 1px solid #e0e0e0;
+    border-top-left-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.book-cover-img {
+    max-height: 320px;
+    border-radius: 10px;
+    z-index: 1;
+}
+
+.spine-gradient {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 15px;
+    height: 100%;
+    background: linear-gradient(to bottom, #4b6cb7, #182848);
+    border-top-left-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    z-index: 2;
+}
+
+</style>
+
+<div class="page-wrapper">
+<h1 class="text-start my-4 text-purple"  >Book Store</h1>
+
+<div class="d-flex justify-content-end mb-4 ">
+    <select class="form-select w-auto  rounded-pill" value="@selectedSort" @onchange="SortBooks" style="border: solid 1px">
+        <option value="title-asc">Title (A-Z)</option>
+        <option value="title-desc">Title (Z-A)</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+    </select>
+</div>
+
+    @if (filteredBooks.Count == 0)
+    {
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+    }
+    else
+    {
+                <div class="row">
+            @foreach (var book in filteredBooks)
+            {
+          <div class="col-lg-3 col-md-4 col-sm-6 mb-4 d-flex justify-content-center">
+            <div class="book-card position-relative d-flex flex-column">
+               <div @onclick="() => ShowBookDetails(book)" class=" justify-content-center  " style="cursor: pointer;">
+                  <div class="d-flex justify-content-center align-items-center" style="height: 180px;">
+
+                        <div class="book-header text-white p-2 text-center" style="background: linear-gradient(135deg, #4b6cb7, #182848); border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                         <img src="@book.CoverImageUrl"
+                          style="max-height: 180px; width: auto; max-width: 100%;
+                           border-radius: 10px;
+                           box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+                           margin: auto;" />
+
+                        </div>
+        </div>
+
+            <div class="book-info text-center flex-grow-1 d-flex flex-column justify-content-center py-3 px-2">
+                <span class="genre-text text-muted text-truncate">@book.Genres.FirstOrDefault()</span>
+                <p class="fw-bold mb-1 clamp-2-lines">@book.Title</p>
+                <small class="text-muted text-truncate">@book.Author</small>
+            </div>
+        </div>
+
+                <div class="book-price text-center mt-auto z-3">
+                    <span class="price-now fw-bold text-purple">$@book.Price</span>
+                    <br />
+                   @if (book.Stock > 0)
+{
+    <button class="btn btn-outline-dark btn-sm rounded-pill mt-2 position-relative z-3"
+            @onclick="() => AddToCart(book)">
+        <i class="bi bi-cart-plus me-1"></i> Add to Cart
+    </button>
+}
+else
+{
+    <span class="badge bg-danger mt-2 rounded-pill px-3 py-2">Out of Stock</span>
+}
+
+                </div>
+            </div>
+        </div>
+
+
+            }
+                </div>
+    }
+
+    @if (!string.IsNullOrEmpty(cartMessage))
+    {
+                <div class="alert alert-success text-center mt-4 w-50 mx-auto shadow-sm rounded-pill">
+            @cartMessage
+                </div>
+    }
+
+    @if (selectedBook != null)
+    {
+           <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5); border:solid black 1px; padding:50px">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content book-modal shadow border-0">
+
+                <div class="d-flex flex-column flex-md-row">
+                    <!-- Left: Book Cover with Gradient Spine -->
+                    <div class="book-image-section d-flex align-items-center justify-content-center">
+                        <div class="spine-gradient"></div>
+                        <img src="@selectedBook.CoverImageUrl"
+                             class="img-fluid book-cover-img"
+                             alt="@selectedBook.Title" />
+                    </div>
+
+                    <!-- Right: Details -->
+                    <div class="p-4 flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="fw-bold mb-0">@selectedBook.Title</h5>
+                            <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                        </div>
+                        <p class="mb-2"><strong>Author:</strong> <span class="text-muted">@selectedBook.Author</span></p>
+                        <p class="mb-2"><strong>Genre:</strong> <span class="text-muted">@string.Join(", ", selectedBook.Genres)</span></p>
+                        <p class="mb-2"><strong>Price:</strong> <span class="text-success fw-bold">$@selectedBook.Price</span></p>
+                        <p><strong>Description:</strong></p>
+                        <p class="text-muted">@selectedBook.Description</p>
+
+                        <div class="mt-4 d-flex justify-content-end">
+                            <button class="btn btn-outline-secondary rounded-pill me-2" @onclick="CloseModal">Close</button>
+                            <button class="btn btn-primary rounded-pill" @onclick="() => AddToCart(selectedBook)">
+                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    }
+
+</div>
+@code {
+    private List<Book> books = new();
+    private List<Book> filteredBooks = new();
+    private string cartMessage = "";
+    private string selectedSort = "title-asc";
+
+    string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    protected override async Task OnInitializedAsync()
+    {
+        StateService.OnChange += ApplyFilters;
+
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM Books";
+
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            string genreString = reader.GetString(3);
+            var genreList = genreString.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(g => g.Trim()).ToList();
+
+            var book = new Book
+                {
+                    Id = reader.GetInt32(0),
+                    Title = reader.GetString(1),
+                    Author = reader.GetString(2),
+                    Genres = genreList,
+                    Price = reader.GetDecimal(4),
+                    Stock = reader.GetInt32(5),  
+                    CoverImageUrl = reader.GetString(6),
+                    Description = reader.GetString(7),
+                    Quantity = 1
+                };
+
+
+            books.Add(book);
+        }
+
+        AppMemory.AvailableGenres = books.SelectMany(b => b.Genres).Distinct().OrderBy(g => g).ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Book> query = books;
+
+        var search = StateService.SearchTerm?.ToLower() ?? "";
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(b => b.Title.ToLower().Contains(search));
+
+        if (!string.IsNullOrWhiteSpace(StateService.SelectedGenre))
+            query = query.Where(b => b.Genres.Contains(StateService.SelectedGenre));
+
+        query = selectedSort switch
+        {
+            "title-asc" => query.OrderBy(b => b.Title),
+            "title-desc" => query.OrderByDescending(b => b.Title),
+            "price-asc" => query.OrderBy(b => b.Price),
+            "price-desc" => query.OrderByDescending(b => b.Price),
+            _ => query.OrderBy(b => b.Title)
+        };
+
+        filteredBooks = query.ToList();
+        StateHasChanged();
+    }
+
+    private void SortBooks(ChangeEventArgs e)
+    {
+        selectedSort = e.Value?.ToString() ?? "title-asc";
+        ApplyFilters();
+    }
+
+    private async void AddToCart(Book book)
+    {
+        AppMemory.AddToCart(book);
+        cartMessage = $"Added \"{book.Title}\" to cart!";
+
+        await Task.Delay(2000);
+        cartMessage = "";
+        StateHasChanged();
+    }
+    Book? selectedBook = null;
+
+    void ShowBookDetails(Book book)
+    {
+        selectedBook = book;
+    }
+
+    void CloseModal()
+    {
+        selectedBook = null;
+    }
+
+}

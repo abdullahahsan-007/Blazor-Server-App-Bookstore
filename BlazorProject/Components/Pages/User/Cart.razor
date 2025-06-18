@@ -1,0 +1,309 @@
+﻿@page "/cart"
+@rendermode InteractiveServer
+@using YourNamespace.Models
+@using Microsoft.Data.SqlClient
+
+<style>
+    .cart-header, .cart-summary {
+        background-color: #7b1fa2;
+        color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px;
+        font-weight: bold;
+    }
+
+    .cart-table td {
+        vertical-align: middle;
+    }
+
+    .cart-item {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .cart-item img {
+        width: 60px;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quantity-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2rem;
+        padding: 0;
+        border-radius: 6px;
+    }
+
+    .summary-box {
+        background-color: #f4eafa;
+        padding: 2rem;
+        border-radius: 16px;
+        font-size: 1rem;
+    }
+
+    .btn-purple {
+        background-color: #8000ff;
+        color: white;
+        border: none;
+    }
+
+    .btn-purple:hover {
+        background-color: #5e00c9;
+    }
+
+    .cart-total {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .validation-error {
+        color: red;
+        font-size: 0.9rem;
+    }
+</style>
+
+<h3 class="mb-4">Cart</h3>
+
+@if (!AppMemory.Cart.Any())
+{
+        <div class="alert alert-info">
+            Your cart is empty.
+            <a href="/" class="btn btn-primary btn-sm text-white">Go shop now</a>.
+        </div>
+}
+else
+{
+        <div class="container">
+            <div class="row cart-header d-none d-md-flex">
+                <div class="col-md-6">Item</div>
+                <div class="col-md-6 d-flex flex-row" style="justify-content:space-between; width:40%;">
+                    <div class="col-md-2 text-center">Quantity</div>
+                    <div class="col-md-2 text-center">Price</div>
+                    <div class="col-md-2 text-center" style="width:100px;">Total Price</div>
+                </div>
+            </div>
+
+        @foreach (var book in AppMemory.Cart)
+        {
+                    <div class="d-flex cart-item align-items-center">
+                        <div class="col-md-6 d-flex align-items-center">
+                            <img src="@book.CoverImageUrl" class="me-3" style="width:100px; height:150px;" />
+                            <div>
+                                <div class="fw-bold">@book.Title</div>
+                                <div class="text-muted"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex flex-row" style="justify-content:space-between; align-items:center; width:37%;">
+                            <div class="col-md-2 text-center">
+                                <div class="quantity-controls">
+                                    <button class="btn btn-outline-secondary quantity-btn" @onclick="() => DecreaseQuantity(book)">−</button>
+                                    <span class="mx-2">@book.Quantity</span>
+                                    <button class="btn btn-outline-secondary quantity-btn" @onclick="() => IncreaseQuantity(book)" disabled="@(book.Quantity >= book.Stock)">+</button>
+                                </div>
+                           
+                        @if (book.Stock == 1)
+                        {
+                                <p class="validation-error" style="width:70px; "> Last book</p>
+                        }
+                        else if (book.Quantity >= book.Stock)
+                        {
+                                 <p class="validation-error" style="width:80px; ">Out of stock</p>
+                        }
+
+                            </div>
+                            <div class="col-md-2 text-center">
+                                $@book.Price
+                            </div>
+                            <div class="col-md-2 text-center">
+                                $@(book.Price * book.Quantity)
+                            </div>
+                        </div>
+                        <div class="d-flex" style="margin: 0 50px;">
+                            <button class="btn btn-sm btn-danger mt-1" @onclick="() => RemoveFromCart(book.Id)">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+        }
+
+            <div class="mt-4 d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                <div class="col-md-4 w-100" style="max-width: 400px;">
+                    <div class="summary-box shadow p-4 rounded bg-light">
+                        <h5 class="mb-3">Shopping Summary</h5>
+
+                        <div class="cart-total mb-3 fw-semibold">
+                            Total Price: $@AppMemory.Cart.Sum(b => b.Price * b.Quantity).ToString("0.00")
+                        </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                                <div class="alert alert-danger">@errorMessage</div>
+                    }
+
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input class="form-control" @bind="userName" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input class="form-control" @bind="phoneNumber" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" rows="2" @bind="address"></textarea>
+                        </div>
+
+                        <button class="btn btn-purple w-100 mb-2" @onclick="Purchase" disabled="@(!AppMemory.Cart.Any())">CHECKOUT</button>
+                        <a href="/home" class="text-decoration-none text-center d-block">← Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+}
+
+@code {
+    private string userName = "";
+    private string phoneNumber = "";
+    private string address = "";
+    private string errorMessage = "";
+
+    private string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchCartStockAsync();
+    }
+
+    private async Task FetchCartStockAsync()
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        foreach (var book in AppMemory.Cart)
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT Stock FROM Books WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", book.Id);
+
+            var result = await cmd.ExecuteScalarAsync();
+            if (result != null && int.TryParse(result.ToString(), out int stock))
+            {
+                book.Stock = stock;
+            }
+        }
+    }
+
+    private void RemoveFromCart(int bookId)
+    {
+        var book = AppMemory.Cart.FirstOrDefault(b => b.Id == bookId);
+        if (book != null)
+            AppMemory.Cart.Remove(book);
+    }
+
+    private void IncreaseQuantity(Book book)
+    {
+        if (book.Quantity < book.Stock)
+        {
+            book.Quantity++;
+        }
+    }
+
+    private void DecreaseQuantity(Book book)
+    {
+        if (book.Quantity > 1)
+            book.Quantity--;
+        else
+            AppMemory.Cart.Remove(book);
+    }
+
+    private async Task Purchase()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(address))
+        {
+            errorMessage = "Please fill in your name, phone number, and address.";
+            return;
+        }
+
+        var total = AppMemory.Cart.Sum(b => b.Price * b.Quantity);
+
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            var tableCheckCommand = connection.CreateCommand();
+            tableCheckCommand.CommandText = @"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Orders' AND xtype='U')
+                BEGIN
+                    CREATE TABLE Orders (
+                        Id INT PRIMARY KEY IDENTITY,
+                        UserName NVARCHAR(100),
+                        PhoneNumber NVARCHAR(20),
+                        Address NVARCHAR(300),
+                        BookId INT,
+                        BookTitle NVARCHAR(200),
+                        Quantity INT,
+                        TotalPrice DECIMAL(10,2),
+                        PurchaseDate DATETIME
+                    )
+                END";
+            await tableCheckCommand.ExecuteNonQueryAsync();
+
+            foreach (var book in AppMemory.Cart)
+            {
+                var cmd = connection.CreateCommand();
+                cmd.CommandText = @"
+        INSERT INTO Orders (UserName, PhoneNumber, Address, BookId, BookTitle, Quantity, TotalPrice, PurchaseDate)
+        VALUES (@name, @phone, @address, @bookId, @title, @qty, @total, @date)";
+                cmd.Parameters.AddWithValue("@name", userName);
+                cmd.Parameters.AddWithValue("@phone", phoneNumber);
+                cmd.Parameters.AddWithValue("@address", address);
+                cmd.Parameters.AddWithValue("@bookId", book.Id);
+                cmd.Parameters.AddWithValue("@title", book.Title);
+                cmd.Parameters.AddWithValue("@qty", book.Quantity);
+                cmd.Parameters.AddWithValue("@total", book.Price * book.Quantity);
+                cmd.Parameters.AddWithValue("@date", DateTime.Now);
+
+                await cmd.ExecuteNonQueryAsync();
+
+             
+                var updateCmd = connection.CreateCommand();
+                updateCmd.CommandText = @"
+        UPDATE Books 
+        SET Stock = Stock - @qty 
+        WHERE Id = @bookId";
+                updateCmd.Parameters.AddWithValue("@qty", book.Quantity);
+                updateCmd.Parameters.AddWithValue("@bookId", book.Id);
+
+                await updateCmd.ExecuteNonQueryAsync();
+            }
+
+            AppMemory.ClearCart();
+            userName = "";
+            phoneNumber = "";
+            address = "";
+
+            errorMessage = $"Purchase successful! Total: ${total:F2}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error occurred: {ex.Message}";
+        }
+    }
+}

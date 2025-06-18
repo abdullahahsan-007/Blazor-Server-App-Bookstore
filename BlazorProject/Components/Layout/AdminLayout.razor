@@ -1,0 +1,45 @@
+﻿@inherits LayoutComponentBase
+
+<style>
+       .page {
+    display: flex;
+    flex-direction: row;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #512BD4;
+    min-height: 100vh;
+}
+.user-site-link {
+    color: black;
+    background-color: white;     
+    padding: 10px 18px;
+    border: solid black 1px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 16px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+
+
+</style>
+
+<div class="page">
+    <div class="sidebar text-white">
+        <Sidebar />
+    </div>
+
+   <main>
+       <div class="top-row px-4 d-flex" style="justify-content: end; border-bottom:1px solid; padding-bottom:18px;">
+    <a href="" target="_blank" class="user-site-link">User Site</a>
+</div>
+
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

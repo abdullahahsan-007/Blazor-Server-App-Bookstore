@@ -1,0 +1,105 @@
+﻿@page "/admin/orderhistory"
+@using Microsoft.Data.SqlClient
+@layout Components.Layout.AdminLayout
+@inject IJSRuntime JS
+
+<style>
+    table thead tr:first-child th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    table thead tr:first-child th:last-child {
+        border-top-right-radius: 10px;
+    }
+</style>
+
+<h3 class="mb-3">All Orders</h3>
+
+@if (orders == null)
+{
+        <p>Loading...</p>
+}
+else if (!orders.Any())
+{
+        <p>No orders found.</p>
+}
+else
+{
+        <div class="table-responsive">
+            <table class="table table-striped table-hover shadow-sm rounded overflow-hidden">
+                <thead style="background-color:#512BD4; color:white;">
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Book</th>
+                        <th>Quantity</th>
+                        <th>Total Price</th>
+                        <th>Purchase Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var order in orders)
+                {
+                            <tr>
+                                <td>@order.Id</td>
+                                <td>@order.UserName</td>
+                                <td>@order.Address</td>
+                                <td>@order.PhoneNumber</td>
+                                <td>@order.BookTitle</td>
+                                <td>@order.Quantity</td>
+                                <td>$@order.Price.ToString("0.00")</td>
+                                <td>@order.PurchaseDate.ToString("g")</td>
+                            </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+}
+
+@code {
+    public class OrderModel
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public string Address { get; set; } = "";
+        public int BookId { get; set; }
+        public string BookTitle { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+        public DateTime PurchaseDate { get; set; }
+    }
+
+    private List<OrderModel>? orders;
+    private string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = new List<OrderModel>();
+
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT * FROM Orders ORDER BY PurchaseDate DESC";
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            orders.Add(new OrderModel
+                {
+                    Id = reader.GetInt32(0),
+                    UserName = reader.GetString(1),
+                    PhoneNumber = reader.GetString(2),
+                    Address = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    BookId = reader.GetInt32(4),
+                    BookTitle = reader.GetString(5),
+                    Quantity = reader.GetInt32(6),
+                    Price = reader.GetDecimal(7),
+                    PurchaseDate = reader.GetDateTime(8)
+                });
+        }
+    }
+}

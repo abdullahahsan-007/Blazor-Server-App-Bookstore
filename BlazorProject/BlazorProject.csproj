@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Remove="Components\Layout\Component.razor" />
+		<Content Remove="Components\Pages\Admin\Books.razor" />
+		<Content Remove="Components\Pages\Admin\ViewOrders.razor" />
+		<Content Remove="Components\Pages\Counter.razor" />
+		<Content Remove="Components\Pages\User\Browse.razor" />
+		<Content Remove="Components\Pages\User\Component.razor" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="App_Data\" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,130 @@
+﻿@page "/login"
+@using Microsoft.Data.SqlClient
+@using YourNamespace.Models
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+@layout Components.Layout.EmptyLayout
+
+<style>
+    .signin-container {
+        max-width: 400px;
+        margin: 60px auto;
+        padding: 2rem;
+        background-color: #fdf7ff;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .signin-container h3 {
+        color: #6a1b9a;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+
+    .btn-purple {
+        background-color: #8000ff;
+        color: white;
+        border: none;
+        width: 100%;
+        border-radius: 10px;
+        padding: 0.6rem;
+        font-weight: bold;
+    }
+
+    .btn-purple:hover {
+        background-color: #5e00c9;
+        color: white;
+    }
+
+    .register-link {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 1.2rem;
+        font-size: 0.95rem;
+    }
+
+    .error-message {
+        color: red;
+        text-align: center;
+        margin-top: 1rem;
+        font-weight: bold;
+    }
+</style>
+
+<div class="signin-container">
+    <h3>Sign In</h3>
+
+    <div>
+        <label>Username:</label>
+        <input @bind="Username" class="form-control" placeholder="Enter your username" />
+    </div>
+
+    <div>
+        <label>Password:</label>
+        <input type="password" @bind="Password" class="form-control" placeholder="Enter your password" />
+    </div>
+
+    <button class="btn btn-purple" @onclick="Signing">Sign In</button>
+
+    <div class="register-link">
+        <span>Don't have an account?</span>
+        <a href="signup" class="text-primary fw-semibold text-decoration-none">Register here</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+            <div class="error-message">@Message</div>
+    }
+</div>
+
+@code {
+    string Username = "";
+    string Password = "";
+    string Message = "";
+
+    string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    async Task Signing()
+    {
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            string query = "SELECT Role FROM Users WHERE Username = @u AND Password = @p";
+            using var cmd = new SqlCommand(query, connection);
+            cmd.Parameters.AddWithValue("@u", Username);
+            cmd.Parameters.AddWithValue("@p", Password);
+
+            var roleObj = await cmd.ExecuteScalarAsync();
+            if (roleObj != null)
+            {
+                string role = roleObj.ToString();
+
+                AppMemory.CurrentUsername = Username;
+                AppMemory.CurrentRole = role;
+
+                if (role == "Admin")
+                    Nav.NavigateTo("/dashboard");
+                else
+                    Nav.NavigateTo("/");
+            }
+
+            else
+            {
+                Message = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = "Error: " + ex.Message;
+        }
+    }
+}

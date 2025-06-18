@@ -1,0 +1,126 @@
+﻿@page "/dashboard"
+@layout Components.Layout.AdminLayout
+@using Microsoft.Data.SqlClient
+
+<h3>Dashboard</h3>
+<p>Welcome admin!</p>
+
+@if (loading)
+{
+        <p>Loading...</p>
+}
+else
+{
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card text-white bg-primary shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">📦 Stock Overview (All Books)</h5>
+                        <p class="card-text">
+                        @totalRemainingBooks of @totalBooksInSystem books remaining
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card text-white bg-success shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">💰 Total Profit</h5>
+                        <p class="card-text">
+                            $@totalProfit.ToString("0.00")
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="mt-4">📚 Stock per Book</h5>
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Total Stock</th>
+                    <th>Sold</th>
+                    <th>Remaining</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var book in bookStockList)
+            {
+                              <tr>
+            <td>@book.Title</td>
+            <td>@book.TotalStock</td>
+            <td>@book.Sold</td>
+            <td>@book.Remaining</td>
+        </tr>
+
+            }
+            </tbody>
+        </table>
+}
+
+@code {
+    private int totalBooksInSystem = 0;
+    private int totalRemainingBooks = 0;
+    private decimal totalProfit = 0;
+    private bool loading = true;
+
+    private string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True";
+
+    private List<BookStock> bookStockList = new();
+
+    class BookStock
+    {
+        public string Title { get; set; } = string.Empty;
+        public int TotalStock { get; set; }    
+        public int Sold { get; set; }          
+        public int Remaining { get; set; }     
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var cmd = new SqlCommand(@"
+          SELECT 
+    b.Title,
+    (b.Stock + ISNULL(SUM(o.Quantity), 0)) AS TotalStock,
+    ISNULL(SUM(o.Quantity), 0) AS Sold,
+    b.Stock AS Remaining
+FROM Books b
+LEFT JOIN Orders o ON b.Id = o.BookId
+GROUP BY b.Title, b.Stock
+        ", connection);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var title = reader["Title"]?.ToString() ?? "";
+            var totalStock = Convert.ToInt32(reader["TotalStock"]);
+            var sold = Convert.ToInt32(reader["Sold"]);
+            var remaining = Convert.ToInt32(reader["Remaining"]);
+
+            bookStockList.Add(new BookStock
+                {
+                    Title = title,
+                    TotalStock = totalStock,
+                    Sold = sold,
+                    Remaining = remaining
+                });
+
+            totalBooksInSystem += totalStock;
+            totalRemainingBooks += remaining;
+        }
+
+
+        reader.Close();
+
+        var profitCmd = new SqlCommand("SELECT SUM(TotalPrice) FROM Orders", connection);
+        var profitResult = await profitCmd.ExecuteScalarAsync();
+        totalProfit = profitResult != DBNull.Value ? Convert.ToDecimal(profitResult) : 0;
+
+        loading = false;
+    }
+}

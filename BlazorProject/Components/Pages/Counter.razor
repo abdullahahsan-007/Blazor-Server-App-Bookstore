@@ -1,0 +1,124 @@
+﻿@page "/"
+@using System.Data
+@using Microsoft.Data.SqlClient
+@rendermode InteractiveServer
+
+
+
+
+<p>
+    <label>Name:</label>
+    <input @bind="Name" />
+</p>
+
+<p>
+    <label>Age:</label>
+    <input type="number" @bind="Age" />
+</p>
+
+<button class="btn btn-primary" @onclick="AddData">Add</button>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+            <p style="color:red;">Error: @ErrorMessage</p>
+}
+else if (PeopleTable == null || PeopleTable.Rows.Count == 0)
+{
+            <p>No data found.</p>
+}
+else
+{
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                @foreach (DataColumn col in PeopleTable.Columns)
+                {
+                                    <th>@col.ColumnName</th>
+                }
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+              
+            </table>
+}
+
+@code {
+    private DataTable? PeopleTable = null;
+    private string? ErrorMessage = null;
+
+    private string Name = string.Empty;
+    private int Age;
+
+    private readonly string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=test;Integrated Security=True";
+
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+
+        
+
+            // Insert default data if table is empty
+            var checkSql = "SELECT COUNT(*) FROM People";
+            using var checkCmd = new SqlCommand(checkSql, connection);
+            int count = (int)checkCmd.ExecuteScalar();
+            if (count == 0)
+            {
+                var insertSql = @"
+                    INSERT INTO People (Name, Age) VALUES
+                    ('Alice', 30),
+                    ('Bob', 25),
+                    ('Charlie', 35);";
+                using var insertCmd = new SqlCommand(insertSql, connection);
+                insertCmd.ExecuteNonQuery();
+            }
+
+            // Load table data
+            var selectSql = "SELECT Id, Name, Age FROM People";
+            using var command = new SqlCommand(selectSql, connection);
+            using var reader = command.ExecuteReader();
+
+            PeopleTable = new DataTable();
+            PeopleTable.Load(reader);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task AddData()
+    {
+        try
+        {
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            var insertSql = "INSERT INTO People (Name, Age) VALUES (@Name, @Age)";
+            using var insertCmd = new SqlCommand(insertSql, connection);
+            insertCmd.Parameters.AddWithValue("@Name", Name);
+            insertCmd.Parameters.AddWithValue("@Age", Age);
+
+            await insertCmd.ExecuteNonQueryAsync();
+            LoadData();
+            await InvokeAsync(StateHasChanged);
+
+            // Clear form
+            Name = string.Empty;
+            Age = 0;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+
+} 

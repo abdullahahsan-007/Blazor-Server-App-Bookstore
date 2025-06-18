@@ -1,0 +1,112 @@
+﻿
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css" rel="stylesheet" />
+</head>
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f5f5;
+    }
+
+    .navbar {
+         padding: 20px 40px;
+        border-bottom: 3px solid #ffc107;
+    }
+
+    .navbar-brand {
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    nav.flex-column {
+      
+        height: 100vh;
+        padding-top: 20px;
+        width: 250px;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-item {
+        margin-bottom: 15px;
+    }
+
+    .nav-link {
+        color: #fff;
+        font-size: 18px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        border-radius: 10px;
+        border-bottom:solid black 3px;
+        transition: background-color 0.3s, padding-left 0.3s; 
+        text-decoration: none;
+    }
+    .nav-link.active {
+    /* background-color: white; */
+    color: white;
+     box-shadow: 2px 4px 10px black; 
+    border-bottom: solid black 3px;
+    padding: 18px;
+}
+
+.nav-link:hover {
+    box-shadow: 2px 4px 10px black;
+    border-bottom: solid black 3px;
+    color: grey; 
+    padding: 18px;
+    /* background-color:#6075f0; */
+    transition: all 0.3s ease;
+}
+
+
+    .nav-link .oi {
+        margin-right: 10px;
+        font-size: 15px;
+    }
+    main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+    }
+  
+</style>
+
+
+
+<body>
+<div class="top-row ps-3 navbar ">
+    <div class="container-fluid">
+        <p class="navbar-brand text-white" >Admin Dashboard</p>
+    </div>
+</div>
+
+<div style="display: flex;">
+    <nav class="flex-column">
+         <div class="nav-item px-3">
+            <NavLink class="nav-link" href="dashboard">
+                <span class="oi oi-home" aria-hidden="true"></span> Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/admin/add-book">
+                <span class="oi oi-plus" aria-hidden="true"></span> Add Book
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/admin/editbooks">
+                <span class="oi oi-book" aria-hidden="true"></span> Edit Books
+            </NavLink>
+        </div>
+          <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/admin/orderhistory">
+                <span class="oi oi-book" aria-hidden="true"></span>Completed Order
+            </NavLink>
+        </div>
+    </nav>
+
+ 
+</div>
+</body>

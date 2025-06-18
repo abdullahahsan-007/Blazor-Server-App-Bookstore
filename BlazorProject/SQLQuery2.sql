@@ -1,0 +1,6 @@
+﻿USE master;
+GO
+ALTER DATABASE [project] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+EXEC sp_detach_db 'project';
+GO
