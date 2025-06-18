@@ -16,9 +16,6 @@ This is a **Blazor Server** application connected to **SQL Server LocalDB** usin
 
 ---
 
-
----
-
 ## 🔧 Setup Instructions
 
 1. **Clone or download the repository**
@@ -26,8 +23,9 @@ This is a **Blazor Server** application connected to **SQL Server LocalDB** usin
    - View it in **SQL Server Object Explorer** (already set up).
 3. **Set up the connection string** in `appsettings.json`:
    ```json
-   "ConnectionStrings": {
-     "DefaultConnection": "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\\project.mdf;Integrated Security=True"
-   }
+"ConnectionStrings": {
+  "DefaultConnection": "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=project;Integrated Security=True"
+}
+
 
 
